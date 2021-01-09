@@ -3,5 +3,5 @@
 ### Ideas
 
 * See previous messages
-* Split messages between left and right sides
+* Identify messages by user
 * Everyone has a username
