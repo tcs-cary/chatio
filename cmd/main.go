@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
 	// "os"
 	// "time"
 	"unicode/utf8"
@@ -34,6 +34,13 @@ mainloop:
 				edit_box.MoveCursorOneRuneBackward()
 			case termbox.KeyArrowRight, termbox.KeyCtrlF:
 				edit_box.MoveCursorOneRuneForward()
+			case termbox.KeyEnter:
+				username := string(edit_box.text)
+				const coldef = termbox.ColorDefault
+				termbox.Clear(coldef, coldef)
+				termbox.Flush()
+				fmt.Println(username)
+				break mainloop
 			default:
 				if ev.Ch != 0 {
 					edit_box.InsertRune(ev.Ch)
