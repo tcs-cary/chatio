@@ -1,39 +1,29 @@
 <template>
   <div class="join">
     <h1>Pick a Username</h1>
-    <input type="text" v-model="username" placeholder="Type a Username">
+    <input type="text" v-model="username" placeholder="Type a Username" />
     <button type="button" @click="checkUsername">Start Chatting!</button>
   </div>
 </template>
 
-
 <script>
-
 export default {
-  name: "Home",
-  data: function () {
+  name: "Join",
+  data: function() {
     return {
-      username: ''
-    }
+      username: ""
+    };
   },
   methods: {
-    checkUsername: function () {
-        localStorage.setItem('username',this.username);
-        this.$router.push('/');
+    checkUsername: function() {
+      localStorage.setItem("username", this.username);
+      this.$router.push("/");
     }
   }
-
 };
-
 </script>
 
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap');
-
-p {
-  color: red;
-}
-
+<style scoped>
 input {
   height: 15%;
   font-size: 15px;
@@ -64,14 +54,14 @@ button:hover {
   width: 30%;
 }
 
-html, body {
+html,
+body {
   background-image: url("https://www.transparenttextures.com/patterns/asfalt-dark.png");
   background-color: #9c9c9c;
-  font-family: 'Yusei Magic', sans-serif;
+  font-family: "Yusei Magic", sans-serif;
   margin: 0;
   padding: 0;
   height: 100%;
   width: 100%;
 }
-
 </style>

@@ -9,11 +9,12 @@ const routes = [
     path: "/",
     name: "Home",
     component: Home,
-    redirect: (to) => {
-      if (localStorage.getItem('username')) {
-        return '/'
+    beforeEnter: (to, from, next) => {
+      if (!localStorage.getItem("username")) {
+        next("/join");
+        return;
       }
-      return '/join'
+      next();
     }
   },
   {
@@ -22,8 +23,7 @@ const routes = [
     // route level code-splitting
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "about" */ "../views/Join.vue")
+    component: () => import(/* webpackChunkName: "about" */ "../views/Join.vue")
   }
 ];
 
