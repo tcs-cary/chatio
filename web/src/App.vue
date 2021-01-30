@@ -31,4 +31,15 @@
 #nav a.router-link-exact-active {
   color: #42b983;
 }
+
+html,
+body {
+  background-image: url("https://www.transparenttextures.com/patterns/asfalt-dark.png");
+  background-color: #9c9c9c;
+  font-family: "Yusei Magic", sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
 </style>
