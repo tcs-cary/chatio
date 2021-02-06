@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	// "os"
 	// "time"
 	"unicode/utf8"
 
-	"github.com/nsf/termbox-go"
 	"github.com/mattn/go-runewidth"
+	"github.com/nsf/termbox-go"
 )
 
 func main() {
@@ -18,7 +18,9 @@ func main() {
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputEsc)
 
-	redraw_all()
+	var ui ui
+
+	ui.draw()
 mainloop:
 	for {
 		switch ev := termbox.PollEvent(); ev.Type {
@@ -27,29 +29,25 @@ mainloop:
 			case termbox.KeyEsc:
 				break mainloop
 			case termbox.KeyBackspace, termbox.KeyBackspace2:
-				edit_box.DeleteRuneBackward()
+				ui.editBox.DeleteRuneBackward()
 			case termbox.KeySpace:
-				edit_box.InsertRune(' ')
+				ui.editBox.InsertRune(' ')
 			case termbox.KeyArrowLeft, termbox.KeyCtrlB:
-				edit_box.MoveCursorOneRuneBackward()
+				ui.editBox.MoveCursorOneRuneBackward()
 			case termbox.KeyArrowRight, termbox.KeyCtrlF:
-				edit_box.MoveCursorOneRuneForward()
+				ui.editBox.MoveCursorOneRuneForward()
 			case termbox.KeyEnter:
-				username := string(edit_box.text)
-				const coldef = termbox.ColorDefault
-				termbox.Clear(coldef, coldef)
-				termbox.Flush()
-				fmt.Println(username)
-				break mainloop
+				ui.username = string(ui.editBox.text)
+				ui.isLoggedIn = true
 			default:
 				if ev.Ch != 0 {
-					edit_box.InsertRune(ev.Ch)
+					ui.editBox.InsertRune(ev.Ch)
 				}
 			}
 		case termbox.EventError:
 			panic(ev.Err)
 		}
-		redraw_all()
+		ui.draw()
 	}
 }
 
@@ -271,46 +269,6 @@ func (eb *EditBox) InsertRune(r rune) {
 // is being set on Draw() call, so.. call this method after Draw() one.
 func (eb *EditBox) CursorX() int {
 	return eb.cursor_voffset - eb.line_voffset
-}
-
-var edit_box EditBox
-
-const edit_box_width = 30
-
-func redraw_all() {
-	const coldef = termbox.ColorDefault
-	termbox.Clear(coldef, coldef)
-	w, h := termbox.Size()
-
-	midy := h / 2
-	midx := (w - edit_box_width) / 2
-
-	// unicode box drawing chars around the edit box
-	if runewidth.EastAsianWidth {
-		termbox.SetCell(midx-1, midy, '|', coldef, coldef)
-		termbox.SetCell(midx+edit_box_width, midy, '|', coldef, coldef)
-		termbox.SetCell(midx-1, midy-1, '+', coldef, coldef)
-		termbox.SetCell(midx-1, midy+1, '+', coldef, coldef)
-		termbox.SetCell(midx+edit_box_width, midy-1, '+', coldef, coldef)
-		termbox.SetCell(midx+edit_box_width, midy+1, '+', coldef, coldef)
-		fill(midx, midy-1, edit_box_width, 1, termbox.Cell{Ch: '-'})
-		fill(midx, midy+1, edit_box_width, 1, termbox.Cell{Ch: '-'})
-	} else {
-		termbox.SetCell(midx-1, midy, '│', coldef, coldef)
-		termbox.SetCell(midx+edit_box_width, midy, '│', coldef, coldef)
-		termbox.SetCell(midx-1, midy-1, '┌', coldef, coldef)
-		termbox.SetCell(midx-1, midy+1, '└', coldef, coldef)
-		termbox.SetCell(midx+edit_box_width, midy-1, '┐', coldef, coldef)
-		termbox.SetCell(midx+edit_box_width, midy+1, '┘', coldef, coldef)
-		fill(midx, midy-1, edit_box_width, 1, termbox.Cell{Ch: '─'})
-		fill(midx, midy+1, edit_box_width, 1, termbox.Cell{Ch: '─'})
-	}
-
-	edit_box.Draw(midx, midy, edit_box_width, 1)
-	termbox.SetCursor(midx+edit_box.CursorX(), midy)
-
-	tbprint(midx+6, midy+3, coldef, coldef, "Press ESC to quit")
-	termbox.Flush()
 }
 
 var arrowLeft = '←'
