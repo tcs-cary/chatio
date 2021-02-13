@@ -9,7 +9,11 @@
 </template>
 
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap");
+
+* {
+  box-sizing: border-box;
+  color: black;
+}
 
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
@@ -17,6 +21,11 @@
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #nav {
