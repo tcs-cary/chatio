@@ -9,7 +9,11 @@
 </template>
 
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap");
+
+* {
+  box-sizing: border-box;
+  color: black;
+}
 
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
@@ -17,6 +21,11 @@
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #nav {
@@ -30,5 +39,16 @@
 
 #nav a.router-link-exact-active {
   color: #42b983;
+}
+
+html,
+body {
+  background-image: url("https://www.transparenttextures.com/patterns/asfalt-dark.png");
+  background-color: #9c9c9c;
+  font-family: "Yusei Magic", sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
 }
 </style>
