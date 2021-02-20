@@ -2,9 +2,10 @@ package main
 
 import (
 	// "fmt"
-	// "os"
-	// "time"
+	"os"
+	"time"
 	"unicode/utf8"
+	"os/signal"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
@@ -15,7 +16,15 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer termbox.Close()
+
+	sigs:=make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt)
+
+	go func() {
+		time.Sleep(5 * time.Second)
+		termbox.Interrupt()
+		}()
+
 	termbox.SetInputMode(termbox.InputEsc)
 
 	var ui ui
@@ -23,7 +32,10 @@ func main() {
 	ui.draw()
 mainloop:
 	for {
+
 		switch ev := termbox.PollEvent(); ev.Type {
+		case termbox.EventInterrupt:
+			break mainloop
 		case termbox.EventKey:
 			switch ev.Key {
 			case termbox.KeyEsc:
@@ -49,6 +61,7 @@ mainloop:
 		}
 		ui.draw()
 	}
+	termbox.Close()
 }
 
 func tbprint(x, y int, fg, bg termbox.Attribute, msg string) {
