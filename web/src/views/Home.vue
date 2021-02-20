@@ -7,27 +7,57 @@
     </div>
     <hr>
     <div id="chatbox">
+      <Message v-for="message in messages" :key="message.timestamp" :message="message"/>
     </div>
     <div id="messagebar">
-      <input type="text" placeholder="Type a Message...">
-      <button id="sendmessage" type="button">Send Message</button>
+      <input type="text" v-model="newMessage" placeholder="Type a Message...">
+      <button id="sendmessage" type="button" @click="createMessage">Send Message</button>
     </div>
   </div>
 </template>
 
 <script>
-// @ is an alias to /src
+import Message from "@/components/Message.vue";
 
 export default {
   name: "Home",
+  components: {
+    Message
+  },
   methods: {
     changeUsername: function() {
       this.$router.push("/join");
+    },
+    createMessage: function() {
+      const newMsg = {
+        timestamp: Date.now(),
+        sender: this.username,
+        body: this.newMessage
+      }
+      this.messages.push(newMsg);
     }
   },
   data: () => {
     return {
-      username: localStorage.getItem("username")
+      username: localStorage.getItem("username"),
+      messages:  [
+        {
+          timestamp: "3:18PM",
+          sender: "Arul",
+          body: "Hello this is a test message."
+        },
+        {
+          timestamp: "3:19PM",
+          sender: "Carson",
+          body: "message 2"
+        },
+        {
+          timestamp: "3:20PM",
+          sender: "Arul",
+          body: "message 3"
+        }
+      ],
+      newMessage: ""
     }
   }
 };
@@ -90,6 +120,7 @@ input {
   width: 90%;
   background-color: white;
   display: flex;
+  flex-direction: column;
 }
 
 hr {
