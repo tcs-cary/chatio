@@ -3,13 +3,17 @@
     <div class="header">
       <h2 id="usernameDisplay">Username: {{ username }}</h2>
       <h1>Chatio</h1>
-      <button @click="changeUsername" id="changeusername" type="button">Change Username</button>
+      <button @click="changeUsername" id="changeusername" type="button">
+        Change Username
+      </button>
     </div>
-    <hr>
-    <Chatbox :username="username" :messages="messages"/>
+    <hr />
+    <Chatbox :username="username" :messages="messages" />
     <div id="messagebar">
-      <input type="text" v-model="newMessage" placeholder="Type a Message...">
-      <button id="sendmessage" type="button" @click="createMessage">Send Message</button>
+      <input type="text" v-model="newMessage" placeholder="Type a Message..." />
+      <button id="sendmessage" type="button" @click="createMessage">
+        Send Message
+      </button>
     </div>
   </div>
 </template>
@@ -31,14 +35,14 @@ export default {
         timestamp: Date.now(),
         sender: this.username,
         body: this.newMessage
-      }
+      };
       this.messages.push(newMsg);
     }
   },
   data: () => {
     return {
       username: localStorage.getItem("username"),
-      messages:  [
+      messages: [
         {
           timestamp: "3:18PM",
           sender: "Arul",
@@ -56,13 +60,12 @@ export default {
         }
       ],
       newMessage: ""
-    }
+    };
   }
 };
 </script>
 
 <style scoped>
-
 #usernameDisplay {
   color: black;
   font-size: 20px;
@@ -133,5 +136,4 @@ h1 {
   background-color: #cfcfcf;
   width: 80%;
 }
-
 </style>

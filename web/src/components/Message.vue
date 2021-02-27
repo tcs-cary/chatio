@@ -1,6 +1,6 @@
 <template>
   <div id="message">
-    <div id="info">{{ message.sender }}  |  {{ message.timestamp }}</div>
+    <div id="info">{{ message.sender }} | {{ message.timestamp }}</div>
     <p id="text">{{ message.body }}</p>
   </div>
 </template>
@@ -14,7 +14,7 @@ export default {
       required: true
     }
   }
-}
+};
 </script>
 
 <style>

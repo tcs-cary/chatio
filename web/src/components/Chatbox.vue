@@ -1,6 +1,10 @@
 <template lang="html">
   <div id="chatbox">
-    <Message v-for="message in myMessages()" :key="message.timestamp" :message="message"/>
+    <Message
+      v-for="message in myMessages"
+      :key="message.timestamp"
+      :message="message"
+    />
   </div>
 </template>
 
@@ -23,13 +27,13 @@ export default {
   },
   computed: {
     myMessages: function() {
-      return this.messages.filter(msg => msg.sender == this.username)
+      return this.messages.filter(msg => msg.sender == this.username);
     },
     otherMessages: function() {
-      return this.messages.filter(msg => msg.sender != this.username)
+      return this.messages.filter(msg => msg.sender != this.username);
     }
   }
-}
+};
 </script>
 
 <style lang="css" scoped>
