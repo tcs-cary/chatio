@@ -5,6 +5,7 @@ import (
 	// "os"
 	// "time"
 	"unicode/utf8"
+	// "os/signal"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
@@ -15,7 +16,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer termbox.Close()
+
 	termbox.SetInputMode(termbox.InputEsc)
 
 	var ui ui
@@ -23,11 +24,14 @@ func main() {
 	ui.draw()
 mainloop:
 	for {
+
 		switch ev := termbox.PollEvent(); ev.Type {
+		case termbox.EventInterrupt:
+			break mainloop
 		case termbox.EventKey:
 			switch ev.Key {
-			case termbox.KeyEsc:
-				break mainloop
+			case termbox.KeyEsc, termbox.KeyCtrlC:
+				go termbox.Interrupt()
 			case termbox.KeyBackspace, termbox.KeyBackspace2:
 				ui.editBox.DeleteRuneBackward()
 			case termbox.KeySpace:
@@ -49,6 +53,7 @@ mainloop:
 		}
 		ui.draw()
 	}
+	termbox.Close()
 }
 
 func tbprint(x, y int, fg, bg termbox.Attribute, msg string) {
