@@ -6,9 +6,7 @@
       <button @click="changeUsername" id="changeusername" type="button">Change Username</button>
     </div>
     <hr>
-    <div id="chatbox">
-      <Message v-for="message in messages" :key="message.timestamp" :message="message"/>
-    </div>
+    <Chatbox :username="username" :messages="messages"/>
     <div id="messagebar">
       <input type="text" v-model="newMessage" placeholder="Type a Message...">
       <button id="sendmessage" type="button" @click="createMessage">Send Message</button>
@@ -17,12 +15,12 @@
 </template>
 
 <script>
-import Message from "@/components/Message.vue";
+import Chatbox from "@/components/Chatbox.vue";
 
 export default {
   name: "Home",
   components: {
-    Message
+    Chatbox
   },
   methods: {
     changeUsername: function() {
@@ -111,16 +109,6 @@ input {
   padding: 0;
   width: 90%;
   margin-bottom: 18px;
-}
-
-#chatbox {
-  border: 1px solid black;
-  border-bottom: none;
-  flex-grow: 2;
-  width: 90%;
-  background-color: white;
-  display: flex;
-  flex-direction: column;
 }
 
 hr {
