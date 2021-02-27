@@ -2,10 +2,10 @@ package main
 
 import (
 	// "fmt"
-	"os"
-	"time"
+	// "os"
+	// "time"
 	"unicode/utf8"
-	"os/signal"
+	// "os/signal"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
@@ -16,14 +16,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	sigs:=make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt)
-
-	go func() {
-		time.Sleep(5 * time.Second)
-		termbox.Interrupt()
-		}()
 
 	termbox.SetInputMode(termbox.InputEsc)
 
@@ -38,8 +30,8 @@ mainloop:
 			break mainloop
 		case termbox.EventKey:
 			switch ev.Key {
-			case termbox.KeyEsc:
-				break mainloop
+			case termbox.KeyEsc, termbox.KeyCtrlC:
+				go termbox.Interrupt()
 			case termbox.KeyBackspace, termbox.KeyBackspace2:
 				ui.editBox.DeleteRuneBackward()
 			case termbox.KeySpace:
