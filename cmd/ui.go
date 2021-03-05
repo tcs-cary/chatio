@@ -19,6 +19,40 @@ func (ui ui) draw() {
 	ui.drawLogin(30)
 }
 
+func (ui ui) run() {
+	mainloop:
+		for {
+
+			switch ev := termbox.PollEvent(); ev.Type {
+			case termbox.EventInterrupt:
+				break mainloop
+			case termbox.EventKey:
+				switch ev.Key {
+				case termbox.KeyEsc, termbox.KeyCtrlC:
+					go termbox.Interrupt()
+				case termbox.KeyBackspace, termbox.KeyBackspace2:
+					ui.editBox.DeleteRuneBackward()
+				case termbox.KeySpace:
+					ui.editBox.InsertRune(' ')
+				case termbox.KeyArrowLeft, termbox.KeyCtrlB:
+					ui.editBox.MoveCursorOneRuneBackward()
+				case termbox.KeyArrowRight, termbox.KeyCtrlF:
+					ui.editBox.MoveCursorOneRuneForward()
+				case termbox.KeyEnter:
+					ui.username = string(ui.editBox.text)
+					ui.isLoggedIn = true
+				default:
+					if ev.Ch != 0 {
+						ui.editBox.InsertRune(ev.Ch)
+					}
+				}
+			case termbox.EventError:
+				panic(ev.Err)
+			}
+			ui.draw()
+		}
+}
+
 func (ui ui) drawChatroom() {
 	const coldef = termbox.ColorDefault
 	termbox.Clear(coldef, coldef)
