@@ -1,257 +1,175 @@
 package main
 
 import (
-	// "fmt"
-	// "os"
-	// "time"
-	"unicode/utf8"
-	// "os/signal"
+	"context"
+	"fmt"
+	"time"
 
-	"github.com/mattn/go-runewidth"
-	"github.com/nsf/termbox-go"
+	"chatio/ui"
+
+	"github.com/mum4k/termdash/align"
+	"github.com/mum4k/termdash/cell"
+	"github.com/mum4k/termdash/container"
+	"github.com/mum4k/termdash/container/grid"
+	"github.com/mum4k/termdash/keyboard"
+	"github.com/mum4k/termdash/linestyle"
+	"github.com/mum4k/termdash/widgets/button"
+	"github.com/mum4k/termdash/widgets/text"
+	"github.com/mum4k/termdash/widgets/textinput"
 )
 
 func main() {
-	err := termbox.Init()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	updateText := make(chan string, 1)
+
+	router := ui.NewRouter()
+
+	login, err := loginView(router, cancel, updateText)
 	if err != nil {
 		panic(err)
 	}
 
-	termbox.SetInputMode(termbox.InputEsc)
-
-	var ui ui
-
-	ui.draw()
-	ui.run()
-	termbox.Close()
-}
-
-func tbprint(x, y int, fg, bg termbox.Attribute, msg string) {
-	for _, c := range msg {
-		termbox.SetCell(x, y, c, fg, bg)
-		x += runewidth.RuneWidth(c)
-	}
-}
-
-func fill(x, y, w, h int, cell termbox.Cell) {
-	for ly := 0; ly < h; ly++ {
-		for lx := 0; lx < w; lx++ {
-			termbox.SetCell(x+lx, y+ly, cell.Ch, cell.Fg, cell.Bg)
-		}
-	}
-}
-
-func rune_advance_len(r rune, pos int) int {
-	if r == '\t' {
-		return tabstop_length - pos%tabstop_length
-	}
-	return runewidth.RuneWidth(r)
-}
-
-func voffset_coffset(text []byte, boffset int) (voffset, coffset int) {
-	text = text[:boffset]
-	for len(text) > 0 {
-		r, size := utf8.DecodeRune(text)
-		text = text[size:]
-		coffset += 1
-		voffset += rune_advance_len(r, voffset)
-	}
-	return
-}
-
-func byte_slice_grow(s []byte, desired_cap int) []byte {
-	if cap(s) < desired_cap {
-		ns := make([]byte, len(s), desired_cap)
-		copy(ns, s)
-		return ns
-	}
-	return s
-}
-
-func byte_slice_remove(text []byte, from, to int) []byte {
-	size := to - from
-	copy(text[from:], text[to:])
-	text = text[:len(text)-size]
-	return text
-}
-
-func byte_slice_insert(text []byte, offset int, what []byte) []byte {
-	n := len(text) + len(what)
-	text = byte_slice_grow(text, n)
-	text = text[:n]
-	copy(text[offset+len(what):], text[offset:])
-	copy(text[offset:], what)
-	return text
-}
-
-const preferred_horizontal_threshold = 5
-const tabstop_length = 8
-
-type EditBox struct {
-	text           []byte
-	line_voffset   int
-	cursor_boffset int // cursor offset in bytes
-	cursor_voffset int // visual cursor offset in termbox cells
-	cursor_coffset int // cursor offset in unicode code points
-}
-
-// Draws the EditBox in the given location, 'h' is not used at the moment
-func (eb *EditBox) Draw(x, y, w, h int) {
-	eb.AdjustVOffset(w)
-
-	const coldef = termbox.ColorDefault
-	const colred = termbox.ColorRed
-
-	fill(x, y, w, h, termbox.Cell{Ch: ' '})
-
-	t := eb.text
-	lx := 0
-	tabstop := 0
-	for {
-		rx := lx - eb.line_voffset
-		if len(t) == 0 {
-			break
-		}
-
-		if lx == tabstop {
-			tabstop += tabstop_length
-		}
-
-		if rx >= w {
-			termbox.SetCell(x+w-1, y, arrowRight,
-				colred, coldef)
-			break
-		}
-
-		r, size := utf8.DecodeRune(t)
-		if r == '\t' {
-			for ; lx < tabstop; lx++ {
-				rx = lx - eb.line_voffset
-				if rx >= w {
-					goto next
-				}
-
-				if rx >= 0 {
-					termbox.SetCell(x+rx, y, ' ', coldef, coldef)
-				}
-			}
-		} else {
-			if rx >= 0 {
-				termbox.SetCell(x+rx, y, r, coldef, coldef)
-			}
-			lx += runewidth.RuneWidth(r)
-		}
-	next:
-		t = t[size:]
+	chat, err := chatRoomView(updateText)
+	if err != nil {
+		panic(err)
 	}
 
-	if eb.line_voffset != 0 {
-		termbox.SetCell(x, y, arrowLeft, colred, coldef)
-	}
-}
+	router.AddRoute("/", login)
+	router.AddRoute("/chat", chat)
 
-// Adjusts line visual offset to a proper value depending on width
-func (eb *EditBox) AdjustVOffset(width int) {
-	ht := preferred_horizontal_threshold
-	max_h_threshold := (width - 1) / 2
-	if ht > max_h_threshold {
-		ht = max_h_threshold
-	}
+	userInterface := ui.New(router, 16*time.Millisecond) // 16 ms ~ 60 fps
 
-	threshold := width - 1
-	if eb.line_voffset != 0 {
-		threshold = width - ht
-	}
-	if eb.cursor_voffset-eb.line_voffset >= threshold {
-		eb.line_voffset = eb.cursor_voffset + (ht - width + 1)
-	}
-
-	if eb.line_voffset != 0 && eb.cursor_voffset-eb.line_voffset < ht {
-		eb.line_voffset = eb.cursor_voffset - ht
-		if eb.line_voffset < 0 {
-			eb.line_voffset = 0
-		}
-	}
-}
-
-func (eb *EditBox) MoveCursorTo(boffset int) {
-	eb.cursor_boffset = boffset
-	eb.cursor_voffset, eb.cursor_coffset = voffset_coffset(eb.text, boffset)
-}
-
-func (eb *EditBox) RuneUnderCursor() (rune, int) {
-	return utf8.DecodeRune(eb.text[eb.cursor_boffset:])
-}
-
-func (eb *EditBox) RuneBeforeCursor() (rune, int) {
-	return utf8.DecodeLastRune(eb.text[:eb.cursor_boffset])
-}
-
-func (eb *EditBox) MoveCursorOneRuneBackward() {
-	if eb.cursor_boffset == 0 {
+	err = userInterface.Run(ctx)
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
-	_, size := eb.RuneBeforeCursor()
-	eb.MoveCursorTo(eb.cursor_boffset - size)
+	fmt.Println("Good Bye!")
 }
 
-func (eb *EditBox) MoveCursorOneRuneForward() {
-	if eb.cursor_boffset == len(eb.text) {
-		return
+func chatRoomView(updateText <-chan string) (*ui.View, error) {
+	unicode, err := text.New()
+	if err != nil {
+		return nil, err
 	}
-	_, size := eb.RuneUnderCursor()
-	eb.MoveCursorTo(eb.cursor_boffset + size)
-}
+	go func() {
+		if err := unicode.Write(<-updateText); err != nil {
+			panic(err)
+		}
+	}()
 
-func (eb *EditBox) MoveCursorToBeginningOfTheLine() {
-	eb.MoveCursorTo(0)
-}
+	builder := grid.New()
+	builder.Add(
+		grid.RowHeightPerc(20,
+			grid.Widget(
+				unicode,
+				container.AlignHorizontal(align.HorizontalCenter),
+				container.AlignVertical(align.VerticalBottom),
+				container.MarginBottom(1),
+			),
+		),
+	)
 
-func (eb *EditBox) MoveCursorToEndOfTheLine() {
-	eb.MoveCursorTo(len(eb.text))
-}
-
-func (eb *EditBox) DeleteRuneBackward() {
-	if eb.cursor_boffset == 0 {
-		return
+	gridOpts, err := builder.Build()
+	if err != nil {
+		return nil, err
 	}
 
-	eb.MoveCursorOneRuneBackward()
-	_, size := eb.RuneUnderCursor()
-	eb.text = byte_slice_remove(eb.text, eb.cursor_boffset, eb.cursor_boffset+size)
+	chatView := ui.NewView(gridOpts...)
+	return chatView, nil
 }
 
-func (eb *EditBox) DeleteRuneForward() {
-	if eb.cursor_boffset == len(eb.text) {
-		return
+func loginView(router *ui.Router, cancel func(), updateText chan<- string) (*ui.View, error) {
+	input, err := textinput.New(
+		textinput.Label("New text:", cell.FgColor(cell.ColorNumber(33))),
+		textinput.MaxWidthCells(20),
+		textinput.Border(linestyle.Light),
+		textinput.PlaceHolder("Enter any text"),
+	)
+	if err != nil {
+		return nil, err
 	}
-	_, size := eb.RuneUnderCursor()
-	eb.text = byte_slice_remove(eb.text, eb.cursor_boffset, eb.cursor_boffset+size)
-}
 
-func (eb *EditBox) DeleteTheRestOfTheLine() {
-	eb.text = eb.text[:eb.cursor_boffset]
-}
-
-func (eb *EditBox) InsertRune(r rune) {
-	var buf [utf8.UTFMax]byte
-	n := utf8.EncodeRune(buf[:], r)
-	eb.text = byte_slice_insert(eb.text, eb.cursor_boffset, buf[:n])
-	eb.MoveCursorOneRuneForward()
-}
-
-// Please, keep in mind that cursor depends on the value of line_voffset, which
-// is being set on Draw() call, so.. call this method after Draw() one.
-func (eb *EditBox) CursorX() int {
-	return eb.cursor_voffset - eb.line_voffset
-}
-
-var arrowLeft = '←'
-var arrowRight = '→'
-
-func init() {
-	if runewidth.EastAsianWidth {
-		arrowLeft = '<'
-		arrowRight = '>'
+	submitB, err := button.New("Submit", func() error {
+		updateText <- input.ReadAndClear()
+		close(updateText)
+		router.NavigateTo("/chat")
+		return nil
+	},
+		button.GlobalKey(keyboard.KeyEnter),
+		button.FillColor(cell.ColorNumber(220)),
+	)
+	if err != nil {
+		return nil, err
 	}
+	clearB, err := button.New("Clear", func() error {
+		input.ReadAndClear()
+		return nil
+	},
+		button.WidthFor("Submit"),
+		button.FillColor(cell.ColorNumber(220)),
+	)
+	if err != nil {
+		return nil, err
+	}
+	quitB, err := button.New("Quit", func() error {
+		cancel()
+		close(updateText)
+		return nil
+	},
+		button.WidthFor("Submit"),
+		button.FillColor(cell.ColorNumber(196)),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	builder := grid.New()
+	builder.Add(
+		grid.RowHeightPerc(20,
+			grid.Widget(
+				input,
+				container.AlignHorizontal(align.HorizontalCenter),
+				container.AlignVertical(align.VerticalBottom),
+				container.MarginBottom(1),
+			),
+		),
+	)
+
+	builder.Add(
+		grid.RowHeightPerc(40,
+			grid.ColWidthPerc(20),
+			grid.ColWidthPerc(20,
+				grid.Widget(
+					submitB,
+					container.AlignVertical(align.VerticalTop),
+					container.AlignHorizontal(align.HorizontalRight),
+				),
+			),
+			grid.ColWidthPerc(20,
+				grid.Widget(
+					clearB,
+					container.AlignVertical(align.VerticalTop),
+					container.AlignHorizontal(align.HorizontalCenter),
+				),
+			),
+			grid.ColWidthPerc(20,
+				grid.Widget(
+					quitB,
+					container.AlignVertical(align.VerticalTop),
+					container.AlignHorizontal(align.HorizontalLeft),
+				),
+			),
+			grid.ColWidthPerc(20),
+		),
+	)
+
+	gridOpts, err := builder.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	loginView := ui.NewView(gridOpts...)
+	return loginView, nil
 }
