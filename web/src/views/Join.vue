@@ -53,6 +53,4 @@ button:hover {
   background-color: #cfcfcf;
   width: 30%;
 }
-
-
 </style>

@@ -3,44 +3,50 @@
     <div class="header">
       <h2 id="usernameDisplay">Username: {{ username }}</h2>
       <h1>Chatio</h1>
-      <button @click="changeUsername" id="changeusername" type="button">Change Username</button>
+      <button @click="changeUsername" id="changeusername" type="button">
+        Change Username
+      </button>
     </div>
-    <hr>
-    <div id="chatbox">
-      <Message v-for="message in messages" :key="message.timestamp" :message="message"/>
-    </div>
+    <hr />
+    <Chatbox :username="username" :messages="messages" />
     <div id="messagebar">
-      <input type="text" v-model="newMessage" placeholder="Type a Message...">
-      <button id="sendmessage" type="button" @click="createMessage">Send Message</button>
+      <input type="text" v-model="newMessage" v-on:keyup.13="createMessage" placeholder="Type a Message..." />
+      <button id="sendmessage" type="button" @click="createMessage">
+        Send Message
+      </button>
     </div>
   </div>
 </template>
 
 <script>
-import Message from "@/components/Message.vue";
+import Chatbox from "@/components/Chatbox.vue";
 
 export default {
   name: "Home",
   components: {
-    Message
+    Chatbox
   },
   methods: {
     changeUsername: function() {
       this.$router.push("/join");
     },
     createMessage: function() {
+      if (this.newMessage.trim() == "") {
+        return;
+      }
       const newMsg = {
         timestamp: Date.now(),
         sender: this.username,
         body: this.newMessage
-      }
+      };
       this.messages.push(newMsg);
+      this.newMessage = "";
     }
   },
   data: () => {
     return {
       username: localStorage.getItem("username"),
-      messages:  [
+      messages: [
         {
           timestamp: "3:18PM",
           sender: "Arul",
@@ -58,13 +64,12 @@ export default {
         }
       ],
       newMessage: ""
-    }
+    };
   }
 };
 </script>
 
 <style scoped>
-
 #usernameDisplay {
   color: black;
   font-size: 20px;
@@ -113,16 +118,6 @@ input {
   margin-bottom: 18px;
 }
 
-#chatbox {
-  border: 1px solid black;
-  border-bottom: none;
-  flex-grow: 2;
-  width: 90%;
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-}
-
 hr {
   border: 1px solid black;
   width: 75%;
@@ -145,5 +140,4 @@ h1 {
   background-color: #cfcfcf;
   width: 80%;
 }
-
 </style>
