@@ -23,10 +23,6 @@ export default {
   margin: 0;
 }
 
-#message {
-  width: 40%;
-}
-
 #text {
   background-color: green;
   margin: 0 0 0 10px;

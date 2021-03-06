@@ -10,7 +10,7 @@
     <hr />
     <Chatbox :username="username" :messages="messages" />
     <div id="messagebar">
-      <input type="text" v-model="newMessage" placeholder="Type a Message..." />
+      <input type="text" v-model="newMessage" v-on:keyup.13="createMessage" placeholder="Type a Message..." />
       <button id="sendmessage" type="button" @click="createMessage">
         Send Message
       </button>
@@ -31,12 +31,16 @@ export default {
       this.$router.push("/join");
     },
     createMessage: function() {
+      if (this.newMessage.trim() == "") {
+        return;
+      }
       const newMsg = {
         timestamp: Date.now(),
         sender: this.username,
         body: this.newMessage
       };
       this.messages.push(newMsg);
+      this.newMessage = "";
     }
   },
   data: () => {

@@ -1,10 +1,19 @@
 <template lang="html">
   <div id="chatbox">
+    <div id="left">
+      <Message
+        v-for="message in myMessages"
+        :key="message.timestamp"
+        :message="message"
+      />
+    </div>
+    <div id="right">
     <Message
-      v-for="message in myMessages"
+      v-for="message in otherMessages"
       :key="message.timestamp"
       :message="message"
     />
+  </div>
   </div>
 </template>
 
@@ -37,6 +46,7 @@ export default {
 </script>
 
 <style lang="css" scoped>
+
 #chatbox {
   border: 1px solid black;
   border-bottom: none;
@@ -44,6 +54,13 @@ export default {
   width: 90%;
   background-color: white;
   display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+#left, #right{
+  display: flex;
   flex-direction: column;
+  width: 40%;
 }
 </style>
