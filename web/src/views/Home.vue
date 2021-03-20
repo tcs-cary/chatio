@@ -10,7 +10,12 @@
     <hr />
     <Chatbox :username="username" :messages="messages" />
     <div id="messagebar">
-      <input type="text" v-model="newMessage" v-on:keyup.13="createMessage" placeholder="Type a Message..." />
+      <input
+        type="text"
+        v-model="newMessage"
+        v-on:keyup.enter="createMessage"
+        placeholder="Type a Message..."
+      />
       <button id="sendmessage" type="button" @click="createMessage">
         Send Message
       </button>
@@ -34,8 +39,10 @@ export default {
       if (this.newMessage.trim() == "") {
         return;
       }
+      const time = new Date();
+      const timestamp = `${time.getHours()}:${time.getMinutes()}`;
       const newMsg = {
-        timestamp: Date.now(),
+        timestamp: timestamp,
         sender: this.username,
         body: this.newMessage
       };
