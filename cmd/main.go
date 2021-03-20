@@ -14,7 +14,7 @@ import (
 	"github.com/mum4k/termdash/keyboard"
 	"github.com/mum4k/termdash/linestyle"
 	"github.com/mum4k/termdash/widgets/button"
-	"github.com/mum4k/termdash/widgets/text"
+	// "github.com/mum4k/termdash/widgets/text"
 	"github.com/mum4k/termdash/widgets/textinput"
 )
 
@@ -49,28 +49,37 @@ func main() {
 }
 
 func chatRoomView(updateText <-chan string) (*ui.View, error) {
-	unicode, err := text.New()
+	input, err := textinput.New(
+		textinput.LabelAlign(align.HorizontalLeft),
+		textinput.PlaceHolder("Enter your message. Now."),
+		textinput.FillColor(cell.ColorBlack),
+		textinput.ClearOnSubmit(),
+		textinput.OnSubmit(func(message string) error {
+			return nil
+		}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	go func() {
-		if err := unicode.Write(<-updateText); err != nil {
-			panic(err)
-		}
-	}()
+	// go func() {
+	// 	if err := unicode.Write(<-updateText); err != nil {
+	// 		panic(err)
+	// 	}
+	// }()
 
 	builder := grid.New()
+	sendButton, err := button.New("Send", func() error {
+		return nil
+	})
 	builder.Add(
+		grid.RowHeightPercWithOpts(80, []container.Option{container.Border(linestyle.Light)}),
 		grid.RowHeightPerc(20,
-			grid.Widget(
-				unicode,
-				container.AlignHorizontal(align.HorizontalCenter),
-				container.AlignVertical(align.VerticalBottom),
-				container.MarginBottom(1),
-			),
+			grid.ColWidthPercWithOpts(90, []container.Option{container.Border(linestyle.Light)}, grid.Widget(
+				input,
+			)),
+			grid.ColWidthPercWithOpts(10, []container.Option{container.Border(linestyle.Light)}, grid.Widget(sendButton)),
 		),
 	)
-
 	gridOpts, err := builder.Build()
 	if err != nil {
 		return nil, err
