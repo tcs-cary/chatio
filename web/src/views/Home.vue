@@ -24,6 +24,8 @@
 </template>
 
 <script>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import Chatbox from "@/components/Chatbox.vue";
 
 export default {
@@ -31,47 +33,51 @@ export default {
   components: {
     Chatbox
   },
-  methods: {
-    changeUsername: function() {
-      this.$router.push("/join");
-    },
-    createMessage: function() {
-      if (this.newMessage.trim() == "") {
-        return;
-      }
+  setup() {
+    const router = useRouter();
+
+    const username = ref(localStorage.getItem("username"));
+    const newMessage = ref("");
+    const messages = ref([{
+            timestamp: "3:18PM",
+            sender: "Arul",
+            body: "Hello this is a test message."
+          },
+          {
+            timestamp: "3:19PM",
+            sender: "Carson",
+            body: "message 2"
+          },
+          {
+            timestamp: "3:20PM",
+            sender: "Arul",
+            body: "message 3"
+          }]);
+
+    function changeUsername() {
+      router.push("/join");
+    }
+
+    function createMessage() {
+      if (newMessage.value.trim() == "") return;
       const time = new Date();
       const timestamp = `${time.getHours()}:${time.getMinutes()}`;
       const newMsg = {
         timestamp: timestamp,
-        sender: this.username,
-        body: this.newMessage
+        sender: username.value,
+        body: newMessage.value
       };
-      this.messages.push(newMsg);
-      this.newMessage = "";
+      messages.value.push(newMsg);
+      newMessage.value = "";
     }
-  },
-  data: () => {
+
     return {
-      username: localStorage.getItem("username"),
-      messages: [
-        {
-          timestamp: "3:18PM",
-          sender: "Arul",
-          body: "Hello this is a test message."
-        },
-        {
-          timestamp: "3:19PM",
-          sender: "Carson",
-          body: "message 2"
-        },
-        {
-          timestamp: "3:20PM",
-          sender: "Arul",
-          body: "message 3"
-        }
-      ],
-      newMessage: ""
-    };
+      username,
+      newMessage,
+      messages,
+      createMessage,
+      changeUsername
+    }
   }
 };
 </script>

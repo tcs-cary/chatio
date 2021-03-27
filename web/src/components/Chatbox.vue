@@ -18,7 +18,9 @@
 </template>
 
 <script>
+import { computed } from 'vue';
 import Message from "@/components/Message.vue";
+
 export default {
   name: "Chatbox",
   components: {
@@ -34,12 +36,17 @@ export default {
       required: true
     }
   },
-  computed: {
-    myMessages: function() {
-      return this.messages.filter(msg => msg.sender == this.username);
-    },
-    otherMessages: function() {
-      return this.messages.filter(msg => msg.sender != this.username);
+  setup(props) {
+    const myMessages = computed(() => {
+      return props.messages.filter(msg => msg.sender == props.username);
+    })
+    const otherMessages = computed(() => {
+      return props.messages.filter(msg => msg.sender != props.username);
+    })
+
+    return {
+      myMessages,
+      otherMessages
     }
   }
 };
