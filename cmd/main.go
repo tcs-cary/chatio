@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"time"
 
+	"chatio/p2p"
 	"chatio/ui"
 
 	"github.com/mum4k/termdash/align"
@@ -14,12 +16,58 @@ import (
 	"github.com/mum4k/termdash/keyboard"
 	"github.com/mum4k/termdash/linestyle"
 	"github.com/mum4k/termdash/widgets/button"
-	// "github.com/mum4k/termdash/widgets/text"
 	"github.com/mum4k/termdash/widgets/textinput"
 )
 
 func main() {
+	listenF := flag.Int("l", 0, "wait for incoming connections")
+	target := flag.String("d", "", "target peer to dial")
+	flag.Parse()
+
 	ctx, cancel := context.WithCancel(context.Background())
+
+	n, err := p2p.NewNode(*listenF)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	conn, err := n.Connect(ctx, "/echo/1.0.0", *target)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	n.Handle("/echo/1.0.0", func(c *p2p.Connection) {
+		msg, err := c.Read()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		fmt.Println(msg)
+		c.Write(msg)
+	})
+
+	if *target == "" {
+		if err = n.Listen(ctx); err != nil {
+			fmt.Println(err)
+		}
+		return
+	}
+
+	err = conn.Write(p2p.Message{Sender: "Me", Body: "Hello, World!"})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	msg, err := conn.Read()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("received message:", msg)
 
 	updateText := make(chan string, 1)
 
