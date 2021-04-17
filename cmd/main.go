@@ -26,51 +26,6 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	n, err := p2p.NewNode(*listenF)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	conn, err := n.Connect(ctx, "/echo/1.0.0", *target)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	n.Handle("/echo/1.0.0", func(c *p2p.Connection) {
-		msg, err := c.Read()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		fmt.Println(msg)
-		c.Write(msg)
-	})
-
-	if *target == "" {
-		if err = n.Listen(ctx); err != nil {
-			fmt.Println(err)
-		}
-		return
-	}
-
-	err = conn.Write(p2p.Message{Sender: "Me", Body: "Hello, World!"})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	msg, err := conn.Read()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("received message:", msg)
-
-	updateText := make(chan string, 1)
-
 	router := ui.NewRouter()
 
 	login, err := loginView(router, cancel, updateText)
@@ -93,6 +48,9 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+
+	updateText := make(chan string, 1)
+
 	fmt.Println("Good Bye!")
 }
 
@@ -109,11 +67,53 @@ func chatRoomView(updateText <-chan string) (*ui.View, error) {
 	if err != nil {
 		return nil, err
 	}
-	// go func() {
-	// 	if err := unicode.Write(<-updateText); err != nil {
-	// 		panic(err)
-	// 	}
-	// }()
+	go func() {
+		if err := unicode.Write(<-updateText); err != nil {
+			panic(err)
+		}
+		n, err := p2p.NewNode(*listenF)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		n.Handle("/echo/1.0.0", func(c *p2p.Connection) {
+			msg, err := c.Read()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			unicode.Write(msg)
+			c.Write(msg)
+		})
+
+		if *target == "" {
+			if err = n.Listen(ctx); err != nil {
+				fmt.Println(err)
+			}
+			return
+		}
+
+		conn, err := n.Connect(ctx, "/echo/1.0.0", *target)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		err = conn.Write(p2p.Message{Sender: "Me", Body: "Hello, World!"})
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		msg, err := conn.Read()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println("received message:", msg)
+	}()
 
 	builder := grid.New()
 	sendButton, err := button.New("Send", func() error {
