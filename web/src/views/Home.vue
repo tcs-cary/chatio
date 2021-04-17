@@ -24,7 +24,8 @@
 </template>
 
 <script>
-import Peer from 'peerjs';
+
+import { useConnect } from '@/p2p/useP2P.js';
 
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -39,7 +40,6 @@ export default {
     const router = useRouter();
     const username = ref(localStorage.getItem("username"));
 
-    const peer = new Peer(username.value);
     const newMessage = ref("");
     const messages = ref([{
             timestamp: "3:18PM",
@@ -57,24 +57,18 @@ export default {
             body: "message 3"
           }]);
 
-    var conn = peer.connect(username.value == "miles" ? "bob" : "miles");
-    // on open will be launch when you successfully connect to PeerServer
-    conn.on('open', function(){
-      console.log("hello");
-      // here you have conn.id
-      conn.send('hi!');
-    });
 
-    peer.on('connection', function(conn) {
-      conn.on('data', function(data){
-        // Will print 'hi!'
-        console.log(data);
-      });
-    });
 
     function changeUsername() {
       router.push("/join");
     }
+
+    const connection = useConnect("localhost:9000");
+
+    connection.onMessage((msg) => {
+      messages.value.push(msg);
+    })
+
 
     function createMessage() {
       if (newMessage.value.trim() == "") return;
@@ -85,7 +79,8 @@ export default {
         sender: username.value,
         body: newMessage.value
       };
-      messages.value.push(newMsg);
+      // messages.value.push(newMsg);
+      connection.send(newMsg);
       newMessage.value = "";
     }
 
