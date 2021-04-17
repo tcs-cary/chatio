@@ -7,17 +7,24 @@
 </template>
 
 <script>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
 export default {
   name: "Join",
-  data: function() {
+  setup() {
+    const router = useRouter();
+
+    const username = ref("");
+
+    function checkUsername() {
+      localStorage.setItem("username", username.value);
+      router.push("/");
+    }
+
     return {
-      username: ""
-    };
-  },
-  methods: {
-    checkUsername: function() {
-      localStorage.setItem("username", this.username);
-      this.$router.push("/");
+      username,
+      checkUsername
     }
   }
 };
@@ -53,6 +60,4 @@ button:hover {
   background-color: #cfcfcf;
   width: 30%;
 }
-
-
 </style>

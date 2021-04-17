@@ -9,7 +9,6 @@
 </template>
 
 <style>
-
 * {
   box-sizing: border-box;
   color: black;
