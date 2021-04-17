@@ -24,6 +24,8 @@
 </template>
 
 <script>
+import Peer from 'peerjs';
+
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Chatbox from "@/components/Chatbox.vue";
@@ -35,8 +37,9 @@ export default {
   },
   setup() {
     const router = useRouter();
-
     const username = ref(localStorage.getItem("username"));
+
+    const peer = new Peer(username.value);
     const newMessage = ref("");
     const messages = ref([{
             timestamp: "3:18PM",
@@ -53,6 +56,21 @@ export default {
             sender: "Arul",
             body: "message 3"
           }]);
+
+    var conn = peer.connect(username.value == "miles" ? "bob" : "miles");
+    // on open will be launch when you successfully connect to PeerServer
+    conn.on('open', function(){
+      console.log("hello");
+      // here you have conn.id
+      conn.send('hi!');
+    });
+
+    peer.on('connection', function(conn) {
+      conn.on('data', function(data){
+        // Will print 'hi!'
+        console.log(data);
+      });
+    });
 
     function changeUsername() {
       router.push("/join");
