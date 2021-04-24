@@ -19,14 +19,21 @@ import (
 	"github.com/mum4k/termdash/widgets/textinput"
 )
 
+var (
+	listenF int
+	target  string
+)
+
 func main() {
-	listenF := flag.Int("l", 0, "wait for incoming connections")
-	target := flag.String("d", "", "target peer to dial")
+	flag.IntVar(&listenF, "l", 0, "wait for incoming connections")
+	flag.StringVar(&target, "d", "", "target peer to dial")
 	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	router := ui.NewRouter()
+
+	updateText := make(chan string, 1)
 
 	login, err := loginView(router, cancel, updateText)
 	if err != nil {
@@ -49,8 +56,6 @@ func main() {
 		return
 	}
 
-	updateText := make(chan string, 1)
-
 	fmt.Println("Good Bye!")
 }
 
@@ -67,11 +72,12 @@ func chatRoomView(updateText <-chan string) (*ui.View, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	go func() {
-		if err := unicode.Write(<-updateText); err != nil {
-			panic(err)
-		}
-		n, err := p2p.NewNode(*listenF)
+		// if err := unicode.Write(<-updateText); err != nil {
+		// 	panic(err)
+		// }
+		n, err := p2p.NewNode(listenF)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -84,18 +90,20 @@ func chatRoomView(updateText <-chan string) (*ui.View, error) {
 				return
 			}
 
-			unicode.Write(msg)
+			// unicode.Write(msg)
 			c.Write(msg)
 		})
 
-		if *target == "" {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		if target == "" {
 			if err = n.Listen(ctx); err != nil {
 				fmt.Println(err)
 			}
 			return
 		}
 
-		conn, err := n.Connect(ctx, "/echo/1.0.0", *target)
+		conn, err := n.Connect(ctx, "/echo/1.0.0", target)
 		if err != nil {
 			fmt.Println(err)
 			return
