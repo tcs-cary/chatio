@@ -18,7 +18,7 @@
 </template>
 
 <script>
-import { defineComponent, computed } from 'vue';
+import { defineComponent, computed } from "vue";
 import Message from "@/components/Message.vue";
 
 export default defineComponent({
@@ -39,15 +39,15 @@ export default defineComponent({
   setup(props) {
     const myMessages = computed(() => {
       return props.messages.filter(msg => msg.sender == props.username);
-    })
+    });
     const otherMessages = computed(() => {
       return props.messages.filter(msg => msg.sender != props.username);
-    })
+    });
 
     return {
       myMessages,
       otherMessages
-    }
+    };
   }
 });
 </script>

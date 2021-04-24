@@ -25,10 +25,10 @@
 
 <script>
 import { defineComponent } from "vue";
-import { useConnect } from '@/p2p/useP2P.js';
+import { useConnect } from "@/p2p/useP2P.js";
 
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 import Chatbox from "@/components/Chatbox.vue";
 
 export default defineComponent({
@@ -41,24 +41,23 @@ export default defineComponent({
     const username = ref(localStorage.getItem("username"));
 
     const newMessage = ref("");
-    const messages = ref([{
-            timestamp: "3:18PM",
-            sender: "Arul",
-            body: "Hello this is a test message."
-          },
-          {
-            timestamp: "3:19PM",
-            sender: "Carson",
-            body: "message 2"
-          },
-          {
-            timestamp: "3:20PM",
-            sender: "Arul",
-            body: "message 3"
-          }
-        ]);
-
-
+    const messages = ref([
+      {
+        timestamp: "3:18PM",
+        sender: "Arul",
+        body: "Hello this is a test message."
+      },
+      {
+        timestamp: "3:19PM",
+        sender: "Carson",
+        body: "message 2"
+      },
+      {
+        timestamp: "3:20PM",
+        sender: "Arul",
+        body: "message 3"
+      }
+    ]);
 
     function changeUsername() {
       router.push("/join");
@@ -69,7 +68,6 @@ export default defineComponent({
     // connection.onMessage((msg) => {
     //   //messages.value.push(msg);
     // })
-
 
     function createMessage() {
       if (newMessage.value.trim() == "") return;
@@ -91,7 +89,7 @@ export default defineComponent({
       messages,
       createMessage,
       changeUsername
-    }
+    };
   }
 });
 </script>
