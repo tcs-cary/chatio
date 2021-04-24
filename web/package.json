@@ -8,9 +8,14 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "chokidar": "^3.5.1",
     "core-js": "^3.6.5",
     "libp2p": "^0.30.12",
+    "libp2p-bootstrap": "^0.12.3",
+    "libp2p-mplex": "^0.10.3",
+    "libp2p-noise": "^2.0.5",
     "libp2p-webrtc-star": "^0.22.0",
+    "libp2p-websockets": "^0.15.6",
     "vue": "^3.0.0-beta.1",
     "vue-router": "^4.0.0-alpha.6"
   },

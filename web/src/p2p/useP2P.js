@@ -5,9 +5,9 @@ import { NOISE } from 'libp2p-noise'
 import Mplex from 'libp2p-mplex'
 import Bootstrap from 'libp2p-bootstrap'
 
-export async function useConnect() {
+export function useConnect() {
   // Create our libp2p node
-  const libp2p = await Libp2p.create({
+  Libp2p.create({
     addresses: {
       // Add the signaling server address, along with our PeerId to our multiaddrs list
       // libp2p will automatically attempt to dial to the signaling server so that it can
@@ -39,25 +39,27 @@ export async function useConnect() {
         }
       }
     }
+  }).then(libp2p => {
+    console.log("connected")
+    // Listen for new peers
+    libp2p.on('peer:discovery', (peerId) => {
+      console.log(`Found peer ${peerId.toB58String()}`)
+    })
+
+    // Listen for new connections to peers
+    libp2p.connectionManager.on('peer:connect', (connection) => {
+      console.log(`Connected to ${connection.remotePeer.toB58String()}`)
+    })
+
+    // Listen for peers disconnecting
+    libp2p.connectionManager.on('peer:disconnect', (connection) => {
+      console.log(`Disconnected from ${connection.remotePeer.toB58String()}`)
+    })
   });
 
-  // Listen for new peers
-  libp2p.on('peer:discovery', (peerId) => {
-    log(`Found peer ${peerId.toB58String()}`)
-  })
-
-  // Listen for new connections to peers
-  libp2p.connectionManager.on('peer:connect', (connection) => {
-    log(`Connected to ${connection.remotePeer.toB58String()}`)
-  })
-
-  // Listen for peers disconnecting
-  libp2p.connectionManager.on('peer:disconnect', (connection) => {
-    log(`Disconnected from ${connection.remotePeer.toB58String()}`)
-  })
 
   return {
-    onMessage: () => {},
-    send: (msg) => {},
+    onMessage: (f) => f(),
+    send: (msg) => console.log(msg),
   }
 }

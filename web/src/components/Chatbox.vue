@@ -18,10 +18,10 @@
 </template>
 
 <script>
-import { computed } from 'vue';
+import { defineComponent, computed } from 'vue';
 import Message from "@/components/Message.vue";
 
-export default {
+export default defineComponent({
   name: "Chatbox",
   components: {
     Message
@@ -49,7 +49,7 @@ export default {
       otherMessages
     }
   }
-};
+});
 </script>
 
 <style lang="css" scoped>

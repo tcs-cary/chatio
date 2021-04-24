@@ -24,14 +24,14 @@
 </template>
 
 <script>
-
+import { defineComponent } from "vue";
 import { useConnect } from '@/p2p/useP2P.js';
 
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Chatbox from "@/components/Chatbox.vue";
 
-export default {
+export default defineComponent({
   name: "Home",
   components: {
     Chatbox
@@ -55,7 +55,8 @@ export default {
             timestamp: "3:20PM",
             sender: "Arul",
             body: "message 3"
-          }]);
+          }
+        ]);
 
 
 
@@ -65,9 +66,9 @@ export default {
 
     const connection = useConnect("localhost:9000");
 
-    connection.onMessage((msg) => {
-      messages.value.push(msg);
-    })
+    // connection.onMessage((msg) => {
+    //   //messages.value.push(msg);
+    // })
 
 
     function createMessage() {
@@ -92,7 +93,7 @@ export default {
       changeUsername
     }
   }
-};
+});
 </script>
 
 <style scoped>
