@@ -16,6 +16,7 @@ import (
 	"github.com/mum4k/termdash/keyboard"
 	"github.com/mum4k/termdash/linestyle"
 	"github.com/mum4k/termdash/widgets/button"
+	"github.com/mum4k/termdash/widgets/text"
 	"github.com/mum4k/termdash/widgets/textinput"
 )
 
@@ -25,7 +26,7 @@ var (
 )
 
 func main() {
-	flag.IntVar(&listenF, "l", 0, "wait for incoming connections")
+	flag.IntVar(&listenF, "l", 4200, "wait for incoming connections")
 	flag.StringVar(&target, "d", "", "target peer to dial")
 	flag.Parse()
 
@@ -73,6 +74,16 @@ func chatRoomView(updateText <-chan string) (*ui.View, error) {
 		return nil, err
 	}
 
+	trimmed, err := text.New()
+	if err != nil {
+		panic(err)
+	}
+
+	address, err := text.New()
+	if err != nil {
+		panic(err)
+	}
+
 	go func() {
 		// if err := unicode.Write(<-updateText); err != nil {
 		// 	panic(err)
@@ -83,10 +94,18 @@ func chatRoomView(updateText <-chan string) (*ui.View, error) {
 			return
 		}
 
+		addrs := n.Addrs()
+
+		if err := address.Write(addrs[0].String()); err != nil {
+			panic(err)
+		}
+
 		n.Handle("/echo/1.0.0", func(c *p2p.Connection) {
 			msg, err := c.Read()
 			if err != nil {
-				fmt.Println(err)
+				if err := trimmed.Write(err.Error()); err != nil {
+					panic(err)
+				}
 				return
 			}
 
@@ -98,29 +117,39 @@ func chatRoomView(updateText <-chan string) (*ui.View, error) {
 		defer cancel()
 		if target == "" {
 			if err = n.Listen(ctx); err != nil {
-				fmt.Println(err)
+				if err := trimmed.Write(err.Error()); err != nil {
+					panic(err)
+				}
 			}
 			return
 		}
 
 		conn, err := n.Connect(ctx, "/echo/1.0.0", target)
 		if err != nil {
-			fmt.Println(err)
+			if err := trimmed.Write(err.Error()); err != nil {
+				panic(err)
+			}
 			return
 		}
 
 		err = conn.Write(p2p.Message{Sender: "Me", Body: "Hello, World!"})
 		if err != nil {
-			fmt.Println(err)
+			if err := trimmed.Write(err.Error()); err != nil {
+				panic(err)
+			}
 			return
 		}
 
 		msg, err := conn.Read()
 		if err != nil {
-			fmt.Println(err)
+			if err := trimmed.Write(err.Error()); err != nil {
+				panic(err)
+			}
 			return
 		}
-		fmt.Println("received message:", msg)
+		if err := trimmed.Write(msg.String()); err != nil {
+			panic(err)
+		}
 	}()
 
 	builder := grid.New()
@@ -128,7 +157,12 @@ func chatRoomView(updateText <-chan string) (*ui.View, error) {
 		return nil
 	})
 	builder.Add(
-		grid.RowHeightPercWithOpts(80, []container.Option{container.Border(linestyle.Light)}),
+		grid.RowHeightPercWithOpts(80, []container.Option{container.Border(linestyle.Light)},
+		grid.ColWidthPercWithOpts(50, []container.Option{container.Border(linestyle.Light)},
+			grid.Widget(trimmed),
+		),
+		grid.ColWidthPercWithOpts(50, []container.Option{container.Border(linestyle.Light)}, grid.Widget(address)),
+		),
 		grid.RowHeightPerc(20,
 			grid.ColWidthPercWithOpts(90, []container.Option{container.Border(linestyle.Light)}, grid.Widget(
 				input,
