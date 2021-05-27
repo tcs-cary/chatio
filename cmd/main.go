@@ -26,7 +26,7 @@ var (
 )
 
 func main() {
-	flag.IntVar(&listenF, "l", 4200, "wait for incoming connections")
+	flag.IntVar(&listenF, "l", 0, "wait for incoming connections")
 	flag.StringVar(&target, "d", "", "target peer to dial")
 	flag.Parse()
 
@@ -84,6 +84,8 @@ func chatRoomView(updateText <-chan string) (*ui.View, error) {
 		panic(err)
 	}
 
+	messageChan := make(chan string)
+
 	go func() {
 		// if err := unicode.Write(<-updateText); err != nil {
 		// 	panic(err)
@@ -101,16 +103,21 @@ func chatRoomView(updateText <-chan string) (*ui.View, error) {
 		}
 
 		n.Handle("/echo/1.0.0", func(c *p2p.Connection) {
-			msg, err := c.Read()
-			if err != nil {
-				if err := trimmed.Write(err.Error()); err != nil {
+			for {
+				msg, err := c.Read()
+				if err != nil {
+					if err := trimmed.Write(err.Error()); err != nil {
+						panic(err)
+					}
+					return
+				}
+				if err := trimmed.Write(msg.String()); err != nil {
 					panic(err)
 				}
-				return
+				// unicode.Write(msg)
+				c.Write(msg)
 			}
 
-			// unicode.Write(msg)
-			c.Write(msg)
 		})
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -122,47 +129,59 @@ func chatRoomView(updateText <-chan string) (*ui.View, error) {
 				}
 			}
 			return
+		} else {
+			conn, err := n.Connect(ctx, "/echo/1.0.0", target)
+			if err != nil {
+				if err := trimmed.Write(err.Error()); err != nil {
+					panic(err)
+				}
+				return
+			}
+			username := <- updateText
+
+			for true {
+				message := <- messageChan
+				trimmed.Write("Hello")
+				err = conn.Write(p2p.Message{Sender: username, Body: message})
+				if err != nil {
+					if err := trimmed.Write(err.Error()); err != nil {
+						panic(err)
+					}
+					return
+				}
+			}
+
+			go func(){
+				for true {
+					msg, err := conn.Read()
+					if err != nil {
+						if err := trimmed.Write(err.Error()); err != nil {
+							panic(err)
+						}
+						return
+					}
+					if err := trimmed.Write(msg.String()); err != nil {
+						panic(err)
+					}
+				}
+				}()
 		}
 
-		conn, err := n.Connect(ctx, "/echo/1.0.0", target)
-		if err != nil {
-			if err := trimmed.Write(err.Error()); err != nil {
-				panic(err)
-			}
-			return
-		}
 
-		err = conn.Write(p2p.Message{Sender: "Me", Body: "Hello, World!"})
-		if err != nil {
-			if err := trimmed.Write(err.Error()); err != nil {
-				panic(err)
-			}
-			return
-		}
 
-		msg, err := conn.Read()
-		if err != nil {
-			if err := trimmed.Write(err.Error()); err != nil {
-				panic(err)
-			}
-			return
-		}
-		if err := trimmed.Write(msg.String()); err != nil {
-			panic(err)
-		}
 	}()
 
 	builder := grid.New()
 	sendButton, err := button.New("Send", func() error {
+		messageChan <- input.ReadAndClear()
 		return nil
 	})
 	builder.Add(
 		grid.RowHeightPercWithOpts(80, []container.Option{container.Border(linestyle.Light)},
-		grid.ColWidthPercWithOpts(50, []container.Option{container.Border(linestyle.Light)},
+		grid.ColWidthPercWithOpts(99, []container.Option{container.Border(linestyle.Light)},
 			grid.Widget(trimmed),
 		),
-		grid.ColWidthPercWithOpts(50, []container.Option{container.Border(linestyle.Light)}, grid.Widget(address)),
-		),
+	),
 		grid.RowHeightPerc(20,
 			grid.ColWidthPercWithOpts(90, []container.Option{container.Border(linestyle.Light)}, grid.Widget(
 				input,
