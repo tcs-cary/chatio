@@ -7,8 +7,8 @@
 </template>
 
 <script>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 export default {
   name: "Join",
@@ -25,7 +25,7 @@ export default {
     return {
       username,
       checkUsername
-    }
+    };
   }
 };
 </script>
