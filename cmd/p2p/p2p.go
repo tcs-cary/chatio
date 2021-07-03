@@ -9,6 +9,8 @@ import (
 	"log"
 	mrand "math/rand"
 	"time"
+	"os"
+	"bufio"
 
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
@@ -37,15 +39,18 @@ func (m Message) String() string {
 // Connection
 type Connection struct {
 	net.Stream
+	buf * bufio.ReadWriter
 	dec *json.Decoder
 	enc *json.Encoder
 }
 
 func newConn(s net.Stream) *Connection {
+	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
 	return &Connection{
 		Stream: s,
-		dec:    json.NewDecoder(s),
-		enc:    json.NewEncoder(s),
+		buf: rw,
+		dec:    json.NewDecoder(rw),
+		enc:    json.NewEncoder(rw),
 	}
 }
 
@@ -55,7 +60,9 @@ func (conn *Connection) Read() (msg Message, err error) {
 }
 
 func (conn *Connection) Write(msg Message) error {
-	return conn.enc.Encode(msg)
+	err := conn.enc.Encode(msg)
+	conn.buf.Flush()
+	return err
 }
 
 type Node struct {
@@ -113,10 +120,11 @@ func makeBasicHost(listenPort int, insecure bool, randseed int64) (host.Host, er
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
 	log.Printf("I am %s\n", fullAddr)
+	f, _ := os.Create("addr.txt")
 	if insecure {
-		log.Printf("Now run \"./libp2p-echo -l %d -d %s -insecure\" on a different terminal\n", listenPort+1, fullAddr)
+		fmt.Fprintf(f, "Now run \"./libp2p-echo -l %d -d %s -insecure\" on a different terminal\n", listenPort+1, fullAddr)
 	} else {
-		log.Printf("Now run \"./libp2p-echo -l %d -d %s\" on a different terminal\n", listenPort+1, fullAddr)
+		fmt.Fprintf(f, "Now run \"./libp2p-echo -l %d -d %s\" on a different terminal\n", listenPort+1, fullAddr)
 	}
 
 	return basicHost, nil

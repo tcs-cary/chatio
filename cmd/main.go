@@ -16,62 +16,25 @@ import (
 	"github.com/mum4k/termdash/keyboard"
 	"github.com/mum4k/termdash/linestyle"
 	"github.com/mum4k/termdash/widgets/button"
+	"github.com/mum4k/termdash/widgets/text"
 	"github.com/mum4k/termdash/widgets/textinput"
 )
 
+var (
+	listenF int
+	target  string
+)
+
 func main() {
-	listenF := flag.Int("l", 0, "wait for incoming connections")
-	target := flag.String("d", "", "target peer to dial")
+	flag.IntVar(&listenF, "l", 0, "wait for incoming connections")
+	flag.StringVar(&target, "d", "", "target peer to dial")
 	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	n, err := p2p.NewNode(*listenF)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	conn, err := n.Connect(ctx, "/echo/1.0.0", *target)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	n.Handle("/echo/1.0.0", func(c *p2p.Connection) {
-		msg, err := c.Read()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		fmt.Println(msg)
-		c.Write(msg)
-	})
-
-	if *target == "" {
-		if err = n.Listen(ctx); err != nil {
-			fmt.Println(err)
-		}
-		return
-	}
-
-	err = conn.Write(p2p.Message{Sender: "Me", Body: "Hello, World!"})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	msg, err := conn.Read()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("received message:", msg)
+	router := ui.NewRouter()
 
 	updateText := make(chan string, 1)
-
-	router := ui.NewRouter()
 
 	login, err := loginView(router, cancel, updateText)
 	if err != nil {
@@ -93,6 +56,7 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+
 	fmt.Println("Good Bye!")
 }
 
@@ -109,18 +73,115 @@ func chatRoomView(updateText <-chan string) (*ui.View, error) {
 	if err != nil {
 		return nil, err
 	}
-	// go func() {
-	// 	if err := unicode.Write(<-updateText); err != nil {
-	// 		panic(err)
-	// 	}
-	// }()
+
+	trimmed, err := text.New()
+	if err != nil {
+		panic(err)
+	}
+
+	address, err := text.New()
+	if err != nil {
+		panic(err)
+	}
+
+	messageChan := make(chan string)
+
+	go func() {
+		// if err := unicode.Write(<-updateText); err != nil {
+		// 	panic(err)
+		// }
+		n, err := p2p.NewNode(listenF)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		addrs := n.Addrs()
+
+		if err := address.Write(addrs[0].String()); err != nil {
+			panic(err)
+		}
+
+		n.Handle("/echo/1.0.0", func(c *p2p.Connection) {
+			for {
+				msg, err := c.Read()
+				if err != nil {
+					if err := trimmed.Write(err.Error()); err != nil {
+						panic(err)
+					}
+					return
+				}
+				if err := trimmed.Write(msg.String()); err != nil {
+					panic(err)
+				}
+				// unicode.Write(msg)
+				c.Write(msg)
+			}
+
+		})
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		if target == "" {
+			if err = n.Listen(ctx); err != nil {
+				if err := trimmed.Write(err.Error()); err != nil {
+					panic(err)
+				}
+			}
+			return
+		} else {
+			conn, err := n.Connect(ctx, "/echo/1.0.0", target)
+			if err != nil {
+				if err := trimmed.Write(err.Error()); err != nil {
+					panic(err)
+				}
+				return
+			}
+			username := <- updateText
+
+			for true {
+				message := <- messageChan
+				trimmed.Write("Hello")
+				err = conn.Write(p2p.Message{Sender: username, Body: message})
+				if err != nil {
+					if err := trimmed.Write(err.Error()); err != nil {
+						panic(err)
+					}
+					return
+				}
+			}
+
+			go func(){
+				for true {
+					msg, err := conn.Read()
+					if err != nil {
+						if err := trimmed.Write(err.Error()); err != nil {
+							panic(err)
+						}
+						return
+					}
+					if err := trimmed.Write(msg.String()); err != nil {
+						panic(err)
+					}
+				}
+				}()
+		}
+
+
+
+	}()
 
 	builder := grid.New()
 	sendButton, err := button.New("Send", func() error {
+		messageChan <- input.ReadAndClear()
 		return nil
 	})
 	builder.Add(
-		grid.RowHeightPercWithOpts(80, []container.Option{container.Border(linestyle.Light)}),
+		grid.RowHeightPercWithOpts(80, []container.Option{container.Border(linestyle.Light)},
+		grid.ColWidthPercWithOpts(99, []container.Option{container.Border(linestyle.Light)},
+			grid.Widget(trimmed),
+		),
+	),
 		grid.RowHeightPerc(20,
 			grid.ColWidthPercWithOpts(90, []container.Option{container.Border(linestyle.Light)}, grid.Widget(
 				input,
