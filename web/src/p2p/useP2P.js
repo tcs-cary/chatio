@@ -53,38 +53,35 @@ export async function useConnect() {
     console.log(`Found peer ${peerId.toB58String()}`);
   });
 
+  let peers = ref({});
+
+  libp2p.peerStore.on('change:multiaddrs', async ({ peerId }) => {
+    if (peerId.toB58String() in peers.value == false) return;
+    console.log("Dialling");
+    await dialPeer(libp2p, peerId, outgoingMessages);
+    delete peers.value[peerId.toB58String()];
+  });
+
+  let timeUp = ref(false);
+
   // Listen for new connections to peers
   libp2p.connectionManager.on("peer:connect", async connection => {
+
+
+    if (timeUp.value) return;
 
 
     console.log(`Connected to ${connection.remotePeer.toB58String()}`);
 
     const addresses = libp2p.peerStore.addressBook.get(connection.remotePeer);
 
-    if (addresses === undefined) return;
+    if (addresses === undefined) {
+      console.warn(`No Addresses for: ${connection.remotePeer.toB58String()}`);
+      peers.value[connection.remotePeer.toB58String()] = connection.remotePeer;
+      return
+    }
 
-    const { stream } = await libp2p.dialProtocol(connection.remotePeer, "/chatio/1.0.0");
-
-    //pipe(outgoingMessages, lp.encode(), stream.sink);
-
-
-
-
-
-    // const ints = (async function*() {
-    //   let i = 0
-    //   while (true) yield i++
-    // })
-
-    console.log("dialed");
-
-    watchEffect(async () => {
-      const msg = unref(outgoingMessages.value[outgoingMessages.value.length - 1]);
-      console.log(msg);
-      await pipe([JSON.stringify(msg)], lp.encode(), stream);
-    })
-
-    console.log("sent");
+    await dialPeer(libp2p, connection.remotePeer, outgoingMessages);
   });
 
 
@@ -101,12 +98,12 @@ export async function useConnect() {
   await libp2p.handle('/chatio/1.0.0', async ({ stream }) => {
     // Send stdin to the stream
     console.log("handle");
-    console.log(stream);
 
 
     // pipe(outgoingMessages.value, lp.encode(), stream.sink);
     //
-    pipe(
+    // while (stream) {
+    let result = await pipe(
       // Read from the stream (the source)
       stream.source,
       // Decode length-prefixed data
@@ -115,18 +112,31 @@ export async function useConnect() {
       async function(source) {
         // For each chunk of data
         for await (const msg of source) {
+          console.log(source);
           // Output the data as a utf8 string
           incomingMessages.value.push(JSON.parse(msg.toString()));
           console.log("recived     " + msg.toString());
 
         }
+        console.log("handle closed");
       }
     )
+
+    console.log(result);
+    // }
+
+
+
 
   })
 
   await libp2p.start();
   console.log(`libp2p id is ${libp2p.peerId.toB58String()}`);
+
+  setTimeout(() => {
+    timeUp.value = true;
+    console.log("timout done!");
+  }, 3000)
 
   // const addr = multiaddr('/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/p2p/QmTyDvctiAzHif8av2X23SoSU249KngGBw7Tp6vVJ5di4H');
 
@@ -142,4 +152,22 @@ export async function useConnect() {
     }),
     send: msg => outgoingMessages.value.push(msg)
   };
+}
+
+async function dialPeer(libp2p, peer, outgoingMessages) {
+  const { stream } = await libp2p.dialProtocol(peer, "/chatio/1.0.0");
+
+  // pipe(outgoingMessages, lp.encode(), stream.sink);
+
+  console.log("dialed");
+
+  watchEffect(async () => {
+    if (outgoingMessages.value.length == 0) return;
+    const msg = unref(outgoingMessages.value[outgoingMessages.value.length - 1]);
+    console.log(msg);
+    await pipe([JSON.stringify(msg)], lp.encode(), stream);
+    console.log("sent");
+  })
+
+
 }

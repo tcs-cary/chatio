@@ -31,8 +31,11 @@
 <script>
 import { defineComponent, computed } from "vue";
 import Message from "@/components/Message.vue";
-import { useConnect } from "@/p2p/useP2P.js";
+// import { useConnect } from "@/p2p/useP2P.js";
 import { ref } from "vue";
+import { getOrCreatePeerId } from "../p2p/peer-id.js";
+import createLibp2p from "../p2p/libp2p.js"
+import Chat from "../p2p/chat.js"
 
 
 export default defineComponent({
@@ -71,13 +74,35 @@ export default defineComponent({
 
 
 
-    const connection = await useConnect("localhost:9000");
+    // const connection = await useConnect("localhost:9000");
 
-    connection.onMessage((msg) => {
-      messages.value.push(msg);
-    })
+    const peerId = await getOrCreatePeerId();
 
-    function createMessage() {
+    const node = await createLibp2p(peerId);
+
+    const client = new Chat(node, "/chatio/1.0.0");
+
+    client.on('message', (message) => {
+        console.log(message);
+        messages.value.push(JSON.parse(message.data));
+      })
+      // Listen for peer updates
+      // client.on('peer:update', ({ id, name }) => {
+      //   setPeers((peers) => {
+      //     const newPeers = { ...peers }
+      //     newPeers[id] = { name }
+      //     return newPeers
+      //   })
+      // })
+      // // Forward stats events to the eventBus
+      client.on('stats', (stats) => console.log(stats));
+
+
+    // connection.onMessage((msg) => {
+    //   messages.value.push(msg);
+    // })
+
+    async function createMessage() {
       if (newMessage.value.trim() == "") return;
       const time = new Date();
       const timestamp = `${time.getHours()}:${time.getMinutes()}`;
@@ -86,8 +111,8 @@ export default defineComponent({
         sender: props.username,
         body: newMessage.value
       };
-      // messages.value.push(newMsg);
-      connection.send(newMsg);
+      messages.value.push(newMsg);
+      await client.send(JSON.stringify(newMsg));
       newMessage.value = "";
     }
     const myMessages = computed(() => {
